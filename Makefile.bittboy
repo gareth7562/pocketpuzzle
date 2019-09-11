@@ -1,0 +1,25 @@
+CHAINPREFIX :=/opt/bittboy-toolchain/
+CROSS_COMPILE := $(CHAINPREFIX)/usr/bin/arm-buildroot-linux-musleabi-
+
+CC = $(CROSS_COMPILE)gcc
+CXX = $(CROSS_COMPILE)g++
+STRIP = $(CROSS_COMPILE)strip
+
+SYSROOT     := $(shell $(CC) --print-sysroot)
+SDL_CFLAGS  := $(shell $(SYSROOT)/mingw32/bin/sdl-config --cflags)
+SDL_LIBS    := $(shell $(SYSROOT)/mingw32/bin/sdl-config --libs)
+MINGW32_LIBS = -L/mingw32/lib/ -L/mingw32/i686-w64-mingw32/lib/ -L/mingw32/lib/gcc/i686-w64-mingw32/7.4.0
+
+
+CFLAGS = -ggdb -DTARGET_BITTBOY -DTARGET=$(TARGET) -D__BUILDTIME__="$(BUILDTIME)" -DLOG_LEVEL=3 -g3 $(SDL_CFLAGS) #-I$(CHAINPREFIX)/usr/include/ -I$(SYSROOT)/usr/include/  -I$(SYSROOT)/usr/include/SDL/ # -mhard-float
+CXXFLAGS = $(CFLAGS)
+LDFLAGS = $(SDL_LIBS) -lSDL -lSDL_image -lSDL_ttf -lfreetype -lpng -lasound -lm -pthread -lz -lstdc++ 
+
+pc:
+	g++ myapp.cpp -g -o ./myapp.out -L/usr/lib $(SDL_LIBS) -I/mingw32/include/ -lSDL -lSDL_image -lSDL_ttf -m32 -lfreetype -lpng -ljpeg $(MINGW32_LIBS)  
+
+bittboy:
+	$(CXX) $(CFLAGS) $(LDFLAGS) myapp.cpp -o myapp.dge $(LDFLAGS)
+
+clean:
+	rm -rf myapp.dge
