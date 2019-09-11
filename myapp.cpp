@@ -516,7 +516,6 @@ int main(int argc, char *argv[])
         }
 
 
-    
         while (SDL_PollEvent(&event))
         {
             switch (event.type)
@@ -549,6 +548,7 @@ int main(int argc, char *argv[])
                     running = 0; 
                 break;
                 }
+                break;
              case SDL_KEYUP:
                 switch (event.key.keysym.sym)
                 {
@@ -637,12 +637,6 @@ int main(int argc, char *argv[])
 
         if (SDL_GetTicks() >= ticks)
         {
-      
-            removeBlocks();
-            
-            ticks = SDL_GetTicks() + speedms;
-            moveBlocks();
-
             if(moveLeft)
             {
                 blockMoveLeft();
@@ -651,6 +645,12 @@ int main(int argc, char *argv[])
             {
                 blockMoveRight();
             }
+            removeBlocks();
+            
+            ticks = SDL_GetTicks() + speedms;
+            moveBlocks();
+
+
             
             
 
