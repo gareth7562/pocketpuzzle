@@ -262,11 +262,13 @@ void checkForLines()
                     playArea[x][y] = -1;
                     playArea[x+1][y] = -1;
                     playArea[x+2][y] = -1;
-
-                    if(x+3 < width && playArea[x+3][y] == color)
+                    for(int i = 0; i < width; i++)
                     {
-                        playArea[x+3][y] = -1;
-                        score += 8;
+                        if(x+i < width && playArea[x+i][y] == color)
+                        {
+                            playArea[x+i][y] = -1;
+                            score += 8;
+                        }
                     }
                     score += 10;
 
@@ -279,10 +281,14 @@ void checkForLines()
                     playArea[x][y+1] = -1;
                     playArea[x][y+2] = -1;
 
-                    if(y+3 < height && playArea[x][y+3] == color)
+                    for(int i = 3; i < height; i++)
                     {
-                        playArea[x][y+3] = -1;
-                        score += points_big;
+                        if(y+i < height && playArea[x][y+i] == color)
+                        {
+                            playArea[x][y+i] = -1;
+                            score += points_big;
+                        }
+
                     }
                     score += points_small;
 
