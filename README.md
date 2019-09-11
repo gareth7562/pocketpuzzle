@@ -5,6 +5,6 @@ To compile you need the bittboy/pocketgo toolchain, there is a guide at https://
 
 Once the toolchain is setup just type "make -file=Makefile.bittboy bittboy"
 
-to compile for PC type "make -file=Makefile.bittboy pc"
+to compile for PC type "make -file=Makefile.bittboy pc" run the .dge file with the explorer application on pocketgo or bittboy
 
 
