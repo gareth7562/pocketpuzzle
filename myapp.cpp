@@ -20,7 +20,7 @@ int called = 0;
 #define BUTTON_R SDLK_BACKSPACE
 
 #define INITIAL_SPEED 300
-#define FAST_SPEED 100
+#define FAST_SPEED 50
 #define PADDING 20
 #define VERSION_TEXT "POCKET PUZZLE V0.1"
 
@@ -30,6 +30,8 @@ const int screen_height = 240;
 int score = 0;
 const int points_big = 10;
 const int points_small = 4;
+
+int matches = 0;
 
 SDL_Surface *loadbmp(std::string file_name);
 int blockCount();
@@ -218,465 +220,487 @@ void blockMoveRight()
         }
     }
 }
+
 void removeBlocks()
 {
     int count = 0;
+
     for (int x = 0; x < width; x++)
     {
         for (int y = 0; y < height; y++)
         {
 
-            if (y + 1 < height && playArea[x][y + 1] == -1)
+            if (y > 0 && playArea[x][y] == -1)
             {
 
-                playArea[x][y + 1] = playArea[x][y];
-                if (playArea[x][y] > 0)
-                {
-                    count++;
+                playArea[x][y] = playArea[x][y - 1];
 
-                    playArea[x][y] = -1;
+                if (playArea[x][y - 1] > 0)
+                {
+
+                    playArea[x][y - 1] = -1;
+
+                    count++;
+                }
+                else
+                {
+                    playArea[x][y - 1] = 0;
                 }
             }
         }
     }
+    //run removeblocks again recursively for every block to be removed
     if (count > 0)
     {
+
         removeBlocks();
     }
-}
-
-void checkForLines()
-{
-
-    for (int color = 1; color < 6; color++)
+    else
     {
+        //remove remaining blocks when blocks reach top of screen
         for (int x = 0; x < width; x++)
         {
-
             for (int y = 0; y < height; y++)
             {
-                if (x + 2 < width && playArea[x][y] == color && playArea[x + 1][y] == color && playArea[x + 2][y] == color)
+                if(playArea[x][y] == -1)
                 {
-
-                    playArea[x][y] = -1;
-                    playArea[x + 1][y] = -1;
-                    playArea[x + 2][y] = -1;
-                    for (int i = 0; i < width; i++)
-                    {
-                        if (x + i < width && playArea[x + i][y] == color)
-                        {
-                            playArea[x + i][y] = -1;
-                            score += 8;
-                        }
-                    }
-                    score += 10;
-                }
-
-                if (y + 2 < height && playArea[x][y] == color && playArea[x][y + 1] == color && playArea[x][y + 2] == color)
-                {
-
-                    playArea[x][y] = -1;
-                    playArea[x][y + 1] = -1;
-                    playArea[x][y + 2] = -1;
-
-                    for (int i = 3; i < height; i++)
-                    {
-                        if (y + i < height && playArea[x][y + i] == color)
-                        {
-                            playArea[x][y + i] = -1;
-                            score += points_big;
-                        }
-                    }
-                    score += points_small;
-                }
-
-                //diagonals
-                if (x - 2 > 0 && y + 2 < height && playArea[x][y] == color && playArea[x - 1][y + 1] == color && playArea[x - 2][y + 2] == color)
-                {
-
-                    playArea[x][y] = -1;
-                    playArea[x - 1][y + 1] = -1;
-                    playArea[x - 2][y + 2] = -1;
-
-                    score += points_big;
-                }
-
-                if (y - 2 > 0 && x + 2 < width && playArea[x][y] == color && playArea[x + 1][y - 1] == color && playArea[x + 2][y - 2] == color)
-                {
-
-                    playArea[x][y] = -1;
-                    playArea[x + 1][y - 1] = -1;
-                    playArea[x + 2][y - 2] = -1;
-
-                    score += points_big;
-                }
-
-                if (x - 2 > 0 && y - 2 > 0 && playArea[x][y] == color && playArea[x - 1][y - 1] == color && playArea[x - 2][y - 2] == color)
-                {
-
-                    playArea[x][y] = -1;
-                    playArea[x - 1][y - 1] = -1;
-                    playArea[x - 2][y - 2] = -1;
-
-                    score += points_big;
-                }
-
-                if (x + 2 < width && y + 2 < height && playArea[x][y] == color && playArea[x + 1][y + 1] == color && playArea[x + 2][y + 2] == color)
-                {
-
-                    playArea[x][y] = -1;
-                    playArea[x + 1][y + 1] = -1;
-                    playArea[x + 2][y + 2] = -1;
-
-                    score += points_big;
+                    playArea[x][y] = 0;
                 }
             }
         }
     }
+
 }
-
-void shuffleBlocks()
-{
-
-    SDL_Surface *temp = newBlock[0].image;
-    newBlock[0].image = newBlock[1].image;
-    newBlock[1].image = temp;
-
-    int colorTemp = newBlock[0].color;
-    newBlock[0].color = newBlock[1].color;
-    newBlock[1].color = colorTemp;
-
-    SDL_Surface *temp2 = newBlock[2].image;
-    newBlock[2].image = newBlock[0].image;
-    newBlock[0].image = temp2;
-
-    int colorTemp2 = newBlock[2].color;
-    newBlock[2].color = newBlock[0].color;
-    newBlock[0].color = colorTemp2;
-}
-
-bool fullBoardCount()
-{
-    int count = 0;
-    int y = 1;
-    for (int x = 0; x < width; x++)
+    void checkForLines()
     {
+
+        matches = 0;
+
+        for (int color = 1; color < 6; color++)
+        {
+            for (int x = 0; x < width; x++)
+            {
+
+                for (int y = 0; y < height; y++)
+                {
+                    if (x + 2 < width && playArea[x][y] == color && playArea[x + 1][y] == color && playArea[x + 2][y] == color)
+                    {
+
+                        playArea[x][y] = -1;
+                        playArea[x + 1][y] = -1;
+                        playArea[x + 2][y] = -1;
+                        for (int i = 0; i < width; i++)
+                        {
+                            if (x + i < width && playArea[x + i][y] == color)
+                            {
+                                playArea[x + i][y] = -1;
+                                score += 8;
+                            }
+                        }
+                        score += 10;
+                        matches++;
+                    }
+
+                    if (y + 2 < height && playArea[x][y] == color && playArea[x][y + 1] == color && playArea[x][y + 2] == color)
+                    {
+
+                        playArea[x][y] = -1;
+                        playArea[x][y + 1] = -1;
+                        playArea[x][y + 2] = -1;
+
+                        for (int i = 3; i < height; i++)
+                        {
+                            if (y + i < height && playArea[x][y + i] == color)
+                            {
+                                playArea[x][y + i] = -1;
+                                score += points_big;
+                            }
+                        }
+                        score += points_small;
+                        matches++;
+                    }
+
+                    //diagonals
+                    if (x - 2 > 0 && y + 2 < height && playArea[x][y] == color && playArea[x - 1][y + 1] == color && playArea[x - 2][y + 2] == color)
+                    {
+
+                        playArea[x][y] = -1;
+                        playArea[x - 1][y + 1] = -1;
+                        playArea[x - 2][y + 2] = -1;
+
+                        score += points_big;
+                        matches++;
+                    }
+
+                    if (y - 2 > 0 && x + 2 < width && playArea[x][y] == color && playArea[x + 1][y - 1] == color && playArea[x + 2][y - 2] == color)
+                    {
+
+                        playArea[x][y] = -1;
+                        playArea[x + 1][y - 1] = -1;
+                        playArea[x + 2][y - 2] = -1;
+
+                        score += points_big;
+                        matches++;
+                    }
+
+                    if (x - 2 > 0 && y - 2 > 0 && playArea[x][y] == color && playArea[x - 1][y - 1] == color && playArea[x - 2][y - 2] == color)
+                    {
+
+                        playArea[x][y] = -1;
+                        playArea[x - 1][y - 1] = -1;
+                        playArea[x - 2][y - 2] = -1;
+
+                        score += points_big;
+                        matches++;
+                    }
+
+                    if (x + 2 < width && y + 2 < height && playArea[x][y] == color && playArea[x + 1][y + 1] == color && playArea[x + 2][y + 2] == color)
+                    {
+
+                        playArea[x][y] = -1;
+                        playArea[x + 1][y + 1] = -1;
+                        playArea[x + 2][y + 2] = -1;
+
+                        score += points_big;
+                        matches++;
+                    }
+                }
+            }
+        }
+    }
+
+    void shuffleBlocks()
+    {
+
+        SDL_Surface *temp = newBlock[0].image;
+        newBlock[0].image = newBlock[1].image;
+        newBlock[1].image = temp;
+
+        int colorTemp = newBlock[0].color;
+        newBlock[0].color = newBlock[1].color;
+        newBlock[1].color = colorTemp;
+
+        SDL_Surface *temp2 = newBlock[2].image;
+        newBlock[2].image = newBlock[0].image;
+        newBlock[0].image = temp2;
+
+        int colorTemp2 = newBlock[2].color;
+        newBlock[2].color = newBlock[0].color;
+        newBlock[0].color = colorTemp2;
+    }
+
+    bool fullBoardCount()
+    {
+        int count = 0;
+        int y = 1;
+        for (int x = 0; x < width; x++)
+        {
             if (playArea[x][y] > 0)
             {
                 count++;
             }
-
-    }
-    if (count >= 6)
-        return true;
-
-    return false;
-}
-
-int getFreePosition()
-{
-
-    int chosenPosition = (rand() % 6);
-
-    if(playArea[chosenPosition][1] <= 0)
-    {
-        return chosenPosition*16;
-    }
-    for(int x = 0; x < width; x++)
-    {
-        if(playArea[x][1] == 0 || playArea[x][1] == -1)
-        {
-            return x*16;
         }
+        if (count >= 6)
+            return true;
+
+        return false;
     }
-    return (rand() % 6) * 16;
-}
 
-void moveBlocks()
-{
-
-    if (playArea[newBlock[2].x / 16][(newBlock[2].y / 16) + 1] <= 0 && newBlock[2].y < height * 16 - 32)
+    int getFreePosition()
     {
 
-        for (int i = 0; i < NUM_BLOCKS; i++)
+        int chosenPosition = (rand() % 6);
+
+        if (playArea[chosenPosition][1] <= 0)
         {
-            newBlock[i].y += 16;
+            return chosenPosition * 16;
         }
-    }
-    else
-    {
-
-        for (int i = 0; i < NUM_BLOCKS; i++)
+        for (int x = 0; x < width; x++)
         {
-            if (newBlock[2].y > -16)
+            if (playArea[x][1] == 0 || playArea[x][1] == -1)
             {
-
-                if (newBlock[i].y > -16)
-                {
-                    playArea[newBlock[i].x / 16][newBlock[i].y / 16] = newBlock[i].color;
-                    newBlock[i].placed = true;
-                }
+                return x * 16;
             }
         }
-    }
-}
-
-void drawBitmap(SDL_Surface *image, int x, int y)
-{
-
-    SDL_Rect dstRect;
-
-    dstRect.x = x;
-    dstRect.y = y;
-
-    /* Blit onto the screen surface */
-    if (SDL_BlitSurface(image, NULL, screen, &dstRect) < 0)
-        fprintf(stderr, "BlitSurface error: %s\n", SDL_GetError());
-}
-
-void quit(int err)
-{
-    printf("Quitting.\n");
-    system("sync");
-    SDL_Quit();
-    exit(err);
-}
-
-Uint32 removeBlocksCallback( Uint32 interval, void* param )
-{
-    removeBlocks();
-
-    return 0;
-}
-
-int main(int argc, char *argv[])
-{
-
-    signal(SIGINT, &quit);
-    signal(SIGSEGV, &quit);
-    signal(SIGTERM, &quit);
-    /* Initialize the SDL library */
-    if (SDL_Init(SDL_INIT_VIDEO | SDL_INIT_TIMER) < 0)
-    {
-        fprintf(stderr,
-                "Couldn't initialize SDL: %s\n", SDL_GetError());
-        exit(1);
+        return (rand() % 6) * 16;
     }
 
-    if (TTF_Init() < 0)
-    {
-        fprintf(stderr,
-                "Couldn't initialize SDL_TTF: %s\n");
-        exit(1);
-    }
-
-    /* Clean up on exit */
-    atexit(SDL_Quit);
-    atexit(TTF_Quit);
-
-    screen = SDL_SetVideoMode(screen_width, screen_height, 16, SDL_SWSURFACE);
-    if (screen == NULL)
-    {
-        fprintf(stderr, "Couldn't set 320x240x16 video mode: %s\n",
-                SDL_GetError());
-        exit(1);
-    }
-
-    TTF_Font *font = TTF_OpenFont("assets/joystix.ttf", 10);
-
-    SDL_Color fontColor = {255, 255, 255};
-    bool restart = false;
-
-    while (!restart)
+    void moveBlocks()
     {
 
-
-        initPlayArea();
-        createBlock((rand() % 6) * 16);
-
-        float ticks = SDL_GetTicks() + INITIAL_SPEED;
-
-        bool fastmode = false;
-        bool moveLeft = false;
-        bool moveRight = false;
-
-        SDL_ShowCursor(false);
-        int speedms = INITIAL_SPEED;
-        SDL_Event event;
-
-        running = 1;
-        SDL_Surface *textSurface = NULL;
-        int text_w, text_h;
-
-
-
-        score = 0;
-        std::string scoreText = "SCORE: " + std::to_string(score);
-
-        while (running)
+        if (playArea[newBlock[2].x / 16][(newBlock[2].y / 16) + 1] <= 0 && newBlock[2].y < height * 16 - 32)
         {
-            if (fastmode)
-            {
-                speedms = FAST_SPEED;
-            }
-            else
-            {
-                speedms = INITIAL_SPEED;
-            }
-
-            while (SDL_PollEvent(&event))
-            {
-                switch (event.type)
-                {
-                case SDL_KEYDOWN:
-                    switch (event.key.keysym.sym)
-                    {
-                    case SDLK_LEFT:
-                        blockMoveLeft();
-                        moveLeft = true;
-                        break;
-
-                    case SDLK_RIGHT:
-                        blockMoveRight();
-                        moveRight = true;
-                        break;
-
-                    case SDLK_DOWN:
-                        fastmode = true;
-                        break;
-
-                    case BUTTON_A:
-                        shuffleBlocks();
-                        break;
-                    case BUTTON_SELECT:
-                        running = 0;
-                        break;
-                    case BUTTON_R:
-                        restart = true;
-                        running = 0;
-                        break;
-                    }
-                    break;
-                case SDL_KEYUP:
-                    switch (event.key.keysym.sym)
-                    {
-                    case SDLK_DOWN:
-                        fastmode = false;
-                        break;
-                    case SDLK_RIGHT:
-                        moveRight = false;
-                        break;
-
-                    case SDLK_LEFT:
-                        moveLeft = false;
-                        break;
-                    }
-                    break;
-                }
-            }
-
-            bgRect.x = PADDING;
-            bgRect.y = 0;
-            bgRect.w = 112;
-            bgRect.h = 240;
-
-            SDL_FillRect(screen, NULL, SDL_MapRGB(screen->format, 0, 0, 0));
-
-            SDL_FillRect(screen, &bgRect, SDL_MapRGB(screen->format, 18, 14, 80));
 
             for (int i = 0; i < NUM_BLOCKS; i++)
             {
-                drawBitmap(newBlock[i].image, PADDING + newBlock[i].x, newBlock[i].y);
+                newBlock[i].y += 16;
             }
+        }
+        else
+        {
 
-            SDL_Surface *bitmap = bitmap_resources.bitmap_red;
-            for (int x = 0; x < width; x++)
+            for (int i = 0; i < NUM_BLOCKS; i++)
             {
-                for (int y = 0; y < height; y++)
+                if (newBlock[2].y > -16)
                 {
-                    switch (playArea[x][y])
+
+                    if (newBlock[i].y > -16)
                     {
-
-                    case -1:
-                        bitmap = bitmap_resources.bitmap_white;
-                        break;
-
-                    case 1:
-                        bitmap = bitmap_resources.bitmap_red;
-                        break;
-
-                    case 2:
-                        bitmap = bitmap_resources.bitmap_green;
-                        break;
-
-                    case 3:
-                        bitmap = bitmap_resources.bitmap_blue;
-                        break;
-
-                    case 4:
-                        bitmap = bitmap_resources.bitmap_yellow;
-                        break;
-
-                    case 5:
-                        bitmap = bitmap_resources.bitmap_orange;
-                        break;
+                        playArea[newBlock[i].x / 16][newBlock[i].y / 16] = newBlock[i].color;
+                        newBlock[i].placed = true;
                     }
-                    if (playArea[x][y] != 0)
-                        drawBitmap(bitmap, PADDING + x * 16, y * 16);
                 }
-
-                TTF_SizeText(font, VERSION_TEXT, &text_w, &text_h);
-
-                drawText(screen, font, VERSION_TEXT, (screen_width - text_w - PADDING), 10);
-
-                TTF_SizeText(font, VERSION_TEXT, &text_w, &text_h);
-
-                scoreText = "SCORE: " + std::to_string(score);
-                drawText(screen, font, scoreText.c_str(), (screen_width - text_w - PADDING), 32);
             }
-
-     
-
-            if (SDL_GetTicks() >= ticks)
-            {
-
-                if(newBlock[2].placed)
-                {
-                    checkForLines();  
-
-                    SDL_TimerID timerID = SDL_AddTimer(300, removeBlocksCallback, NULL);
-                }
-                if (moveLeft)
-                {
-                    blockMoveLeft();
-                }
-                if (moveRight)
-                {
-                    blockMoveRight();
-                }
-
-                if (fullBoardCount())
-                {
-                    running = 0;
-                }
-
-                if(newBlock[2].placed)
-                {
-
-
-                    createBlock(getFreePosition());
-                    
-
-
-                }
-
-                ticks = SDL_GetTicks() + speedms;
-
-                moveBlocks();
-            }
-
-            SDL_Flip(screen);
         }
     }
-    quit(0);
-}
+
+    void drawBitmap(SDL_Surface * image, int x, int y)
+    {
+
+        SDL_Rect dstRect;
+
+        dstRect.x = x;
+        dstRect.y = y;
+
+        /* Blit onto the screen surface */
+        if (SDL_BlitSurface(image, NULL, screen, &dstRect) < 0)
+            fprintf(stderr, "BlitSurface error: %s\n", SDL_GetError());
+    }
+
+    void quit(int err)
+    {
+        printf("Quitting.\n");
+        system("sync");
+        SDL_Quit();
+        exit(err);
+    }
+
+    Uint32 removeBlocksCallback(Uint32 interval, void *param)
+    {
+        removeBlocks();
+
+        return 0;
+    }
+
+    int main(int argc, char *argv[])
+    {
+
+        signal(SIGINT, &quit);
+        signal(SIGSEGV, &quit);
+        signal(SIGTERM, &quit);
+        /* Initialize the SDL library */
+        if (SDL_Init(SDL_INIT_VIDEO | SDL_INIT_TIMER) < 0)
+        {
+            fprintf(stderr,
+                    "Couldn't initialize SDL: %s\n", SDL_GetError());
+            exit(1);
+        }
+
+        if (TTF_Init() < 0)
+        {
+            fprintf(stderr,
+                    "Couldn't initialize SDL_TTF: %s\n");
+            exit(1);
+        }
+
+        /* Clean up on exit */
+        atexit(SDL_Quit);
+        atexit(TTF_Quit);
+
+        screen = SDL_SetVideoMode(screen_width, screen_height, 16, SDL_SWSURFACE);
+        if (screen == NULL)
+        {
+            fprintf(stderr, "Couldn't set 320x240x16 video mode: %s\n",
+                    SDL_GetError());
+            exit(1);
+        }
+
+        TTF_Font *font = TTF_OpenFont("assets/joystix.ttf", 10);
+
+        SDL_Color fontColor = {255, 255, 255};
+        bool restart = false;
+
+        while (!restart)
+        {
+
+            initPlayArea();
+            createBlock((rand() % 6) * 16);
+
+            float ticks = SDL_GetTicks() + INITIAL_SPEED;
+
+            bool fastmode = false;
+            bool moveLeft = false;
+            bool moveRight = false;
+
+            SDL_ShowCursor(false);
+            int speedms = INITIAL_SPEED;
+            SDL_Event event;
+
+            running = 1;
+            SDL_Surface *textSurface = NULL;
+            int text_w, text_h;
+
+            score = 0;
+            std::string scoreText = "SCORE: " + std::to_string(score);
+
+            while (running)
+            {
+                if (fastmode)
+                {
+                    speedms = FAST_SPEED;
+                }
+                else
+                {
+                    speedms = INITIAL_SPEED;
+                }
+
+                while (SDL_PollEvent(&event))
+                {
+                    switch (event.type)
+                    {
+                    case SDL_KEYDOWN:
+                        switch (event.key.keysym.sym)
+                        {
+                        case SDLK_LEFT:
+                            blockMoveLeft();
+                            moveLeft = true;
+                            break;
+
+                        case SDLK_RIGHT:
+                            blockMoveRight();
+                            moveRight = true;
+                            break;
+
+                        case SDLK_DOWN:
+                            fastmode = true;
+                            break;
+
+                        case BUTTON_A:
+                            shuffleBlocks();
+                            break;
+                        case BUTTON_SELECT:
+                            running = 0;
+                            break;
+                        case BUTTON_R:
+                            restart = true;
+                            running = 0;
+                            break;
+                        }
+                        break;
+                    case SDL_KEYUP:
+                        switch (event.key.keysym.sym)
+                        {
+                        case SDLK_DOWN:
+                            fastmode = false;
+                            break;
+                        case SDLK_RIGHT:
+                            moveRight = false;
+                            break;
+
+                        case SDLK_LEFT:
+                            moveLeft = false;
+                            break;
+                        }
+                        break;
+                    }
+                }
+
+                bgRect.x = PADDING;
+                bgRect.y = 0;
+                bgRect.w = 112;
+                bgRect.h = 240;
+
+                SDL_FillRect(screen, NULL, SDL_MapRGB(screen->format, 0, 0, 0));
+
+                SDL_FillRect(screen, &bgRect, SDL_MapRGB(screen->format, 18, 14, 80));
+
+                for (int i = 0; i < NUM_BLOCKS; i++)
+                {
+                    drawBitmap(newBlock[i].image, PADDING + newBlock[i].x, newBlock[i].y);
+                }
+
+                SDL_Surface *bitmap = bitmap_resources.bitmap_red;
+                for (int x = 0; x < width; x++)
+                {
+                    for (int y = 0; y < height; y++)
+                    {
+                        switch (playArea[x][y])
+                        {
+
+                        case -1:
+                            bitmap = bitmap_resources.bitmap_white;
+                            break;
+
+                        case 1:
+                            bitmap = bitmap_resources.bitmap_red;
+                            break;
+
+                        case 2:
+                            bitmap = bitmap_resources.bitmap_green;
+                            break;
+
+                        case 3:
+                            bitmap = bitmap_resources.bitmap_blue;
+                            break;
+
+                        case 4:
+                            bitmap = bitmap_resources.bitmap_yellow;
+                            break;
+
+                        case 5:
+                            bitmap = bitmap_resources.bitmap_orange;
+                            break;
+                        }
+                        if (playArea[x][y] != 0)
+                            drawBitmap(bitmap, PADDING + x * 16, y * 16);
+                    }
+
+                    TTF_SizeText(font, VERSION_TEXT, &text_w, &text_h);
+
+                    drawText(screen, font, VERSION_TEXT, (screen_width - text_w - PADDING), 10);
+
+                    TTF_SizeText(font, VERSION_TEXT, &text_w, &text_h);
+
+                    scoreText = "SCORE: " + std::to_string(score);
+                    drawText(screen, font, scoreText.c_str(), (screen_width - text_w - PADDING), 32);
+                }
+
+                if (SDL_GetTicks() >= ticks)
+                {
+
+                    if (newBlock[2].placed)
+                    {
+
+                        SDL_TimerID timerID = SDL_AddTimer(100, removeBlocksCallback, NULL);
+                        checkForLines();
+                    }
+                    if (moveLeft)
+                    {
+                        blockMoveLeft();
+                    }
+                    if (moveRight)
+                    {
+                        blockMoveRight();
+                    }
+
+                    if (fullBoardCount())
+                    {
+                        running = 0;
+                    }
+
+                    if (newBlock[2].placed)
+                    {
+
+                        createBlock(getFreePosition());
+                    }
+
+                    ticks = SDL_GetTicks() + speedms;
+
+                    moveBlocks();
+                }
+
+                SDL_Flip(screen);
+            }
+        }
+        quit(0);
+    }
