@@ -18,6 +18,7 @@ int called = 0;
 #define BUTTON_A SDLK_LCTRL
 #define BUTTON_SELECT SDLK_ESCAPE
 #define BUTTON_R SDLK_BACKSPACE
+#define BUTTON_START SDLK_RETURN
 
 #define INITIAL_SPEED 300
 #define FAST_SPEED 50
@@ -32,11 +33,13 @@ const int points_big = 10;
 const int points_small = 4;
 
 int matches = 0;
+bool paused = false;
 
 SDL_Surface *loadbmp(std::string file_name);
 int blockCount();
 void checkForLines();
 void removeBlocks();
+Uint32 removeBlocksCallback(Uint32 interval, void *param);
 
 std::list<int> full_columns;
 
@@ -285,24 +288,48 @@ void removeBlocks()
                 {
                     if (x + 2 < width && playArea[x][y] == color && playArea[x + 1][y] == color && playArea[x + 2][y] == color)
                     {
+                        matches = 0;
 
                         playArea[x][y] = -1;
                         playArea[x + 1][y] = -1;
                         playArea[x + 2][y] = -1;
-                        for (int i = 0; i < width; i++)
+
+
+                        for (int i = 3; i < width; i++)
                         {
                             if (x + i < width && playArea[x + i][y] == color)
                             {
-                                playArea[x + i][y] = -1;
-                                score += 8;
+                                matches++;
                             }
+                            else
+                            {
+                                matches = 0;
+                            }
+
                         }
-                        score += 10;
-                        matches++;
+
+                        if(matches > 0)
+                        {
+                            
+                            for (int i = 3; i < width; i++)
+                            {
+                                    playArea[x + i][y] = -1;
+                                    score += points_big;
+                            }
+
+                        }
+
+                        
+                        score += points_small;
+
+                        
+                        SDL_TimerID timerID = SDL_AddTimer(1000, removeBlocksCallback, NULL);
                     }
 
                     if (y + 2 < height && playArea[x][y] == color && playArea[x][y + 1] == color && playArea[x][y + 2] == color)
                     {
+
+                        matches = 0;
 
                         playArea[x][y] = -1;
                         playArea[x][y + 1] = -1;
@@ -312,12 +339,29 @@ void removeBlocks()
                         {
                             if (y + i < height && playArea[x][y + i] == color)
                             {
+                                matches++;
+                                
+                            }
+                            else
+                            {
+                                matches = 0;
+                            }
+
+                    
+                        }
+
+                        if(matches > 0)
+                        {
+                            for (int i = 3; i < width; i++)
+                            {
                                 playArea[x][y + i] = -1;
                                 score += points_big;
                             }
                         }
                         score += points_small;
-                        matches++;
+
+                        
+                        SDL_TimerID timerID = SDL_AddTimer(1000, removeBlocksCallback, NULL);
                     }
 
                     //diagonals
@@ -329,7 +373,7 @@ void removeBlocks()
                         playArea[x - 2][y + 2] = -1;
 
                         score += points_big;
-                        matches++;
+
                     }
 
                     if (y - 2 > 0 && x + 2 < width && playArea[x][y] == color && playArea[x + 1][y - 1] == color && playArea[x + 2][y - 2] == color)
@@ -340,7 +384,8 @@ void removeBlocks()
                         playArea[x + 2][y - 2] = -1;
 
                         score += points_big;
-                        matches++;
+                        
+                        SDL_TimerID timerID = SDL_AddTimer(1000, removeBlocksCallback, NULL);
                     }
 
                     if (x - 2 > 0 && y - 2 > 0 && playArea[x][y] == color && playArea[x - 1][y - 1] == color && playArea[x - 2][y - 2] == color)
@@ -351,7 +396,9 @@ void removeBlocks()
                         playArea[x - 2][y - 2] = -1;
 
                         score += points_big;
-                        matches++;
+
+                        
+                        SDL_TimerID timerID = SDL_AddTimer(1000, removeBlocksCallback, NULL);
                     }
 
                     if (x + 2 < width && y + 2 < height && playArea[x][y] == color && playArea[x + 1][y + 1] == color && playArea[x + 2][y + 2] == color)
@@ -362,7 +409,8 @@ void removeBlocks()
                         playArea[x + 2][y + 2] = -1;
 
                         score += points_big;
-                        matches++;
+                        
+                        SDL_TimerID timerID = SDL_AddTimer(1000, removeBlocksCallback, NULL);
                     }
                 }
             }
@@ -581,6 +629,14 @@ void removeBlocks()
                         case BUTTON_SELECT:
                             running = 0;
                             break;
+                        case BUTTON_START:
+                            if(!paused)
+                            paused = true;
+                            else
+                            {
+                                paused = false;
+                            }
+                            break;
                         case BUTTON_R:
                             restart = true;
                             running = 0;
@@ -665,13 +721,12 @@ void removeBlocks()
                     drawText(screen, font, scoreText.c_str(), (screen_width - text_w - PADDING), 32);
                 }
 
-                if (SDL_GetTicks() >= ticks)
+                if (SDL_GetTicks() >= ticks && !paused)
                 {
 
                     if (newBlock[2].placed)
                     {
 
-                        SDL_TimerID timerID = SDL_AddTimer(100, removeBlocksCallback, NULL);
                         checkForLines();
                     }
                     if (moveLeft)
